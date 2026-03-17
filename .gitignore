@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env.*
+venv/
+.env
+
+# keyring cache
+.keyring_cache
+
+# Google service account keys (should not be committed)
+*.json
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+
+# Editor
+.vscode/

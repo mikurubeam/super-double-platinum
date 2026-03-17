@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dance Competition - GitHub Pages View</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 1.5rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #f4f4f4; }
+    label { display: block; margin-top: 1rem; }
+    input { width: 100%; padding: 0.5rem; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Dance Competition Tracker (GitHub view)</h1>
+  <p>This page can be hosted on GitHub Pages. It fetches the <code>Results</code> worksheet
+     directly using the Google Sheets REST API.</p>
+
+  <label>
+    Spreadsheet ID:
+    <input id="sheetId" placeholder="Enter your spreadsheet ID" />
+  </label>
+
+  <label>
+    Google API Key:
+    <input id="apiKey" placeholder="Enter a Google API key" />
+  </label>
+
+  <button id="load">Load Results</button>
+  <div id="status" class="small"></div>
+
+  <div id="results"></div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+    const loadBtn = document.getElementById('load');
+
+    function renderTable(rows) {
+      const table = document.createElement('table');
+      const header = table.insertRow();
+      for (const col of rows[0]) {
+        const th = document.createElement('th');
+        th.textContent = col;
+        header.appendChild(th);
+      }
+      for (let r = 1; r < rows.length; r += 1) {
+        const tr = table.insertRow();
+        for (const cell of rows[r]) {
+          const td = tr.insertCell();
+          td.textContent = cell;
+        }
+      }
+      return table;
+    }
+
+    async function load() {
+      const sheetId = document.getElementById('sheetId').value.trim();
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!sheetId || !apiKey) {
+        statusEl.textContent = 'Sheet ID and API key are required.';
+        return;
+      }
+      statusEl.textContent = 'Loading...';
+      resultsEl.innerHTML = '';
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Results?key=${apiKey}`;
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const json = await resp.json();
+        if (!json.values) {
+          statusEl.textContent = 'No values found.';
+          return;
+        }
+        resultsEl.appendChild(renderTable(json.values));
+        statusEl.textContent = `Loaded ${json.values.length - 1} rows.`;
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+      }
+    }
+
+    loadBtn.addEventListener('click', load);
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dance Competition Tracker</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 1.5rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #f4f4f4; }
+    pre { background: #f7f7f7; padding: 1rem; overflow: auto; }
+    .small { font-size: 0.9rem; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Dance Competition Tracker</h1>
+  <p>
+    This page displays the data saved in the configured Google Sheet.
+    When running locally, the data is fetched from <code>/api/results</code>.
+  </p>
+
+  <button id="refresh">Refresh</button>
+  <div id="status" class="small"></div>
+
+  <h2>Results</h2>
+  <div id="results"></div>
+
+  <h2>How to add scores</h2>
+  <p>
+    Send an SMS message to the configured phone number with a payload like:
+  </p>
+  <pre>event: Solo; dancer: Alice; place: 1; score: 9.5</pre>
+  <p>It will be parsed and stored in the spreadsheet.</p>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+    const refreshBtn = document.getElementById('refresh');
+
+    async function fetchResults() {
+      statusEl.textContent = 'Loading...';
+      resultsEl.innerHTML = '';
+
+      try {
+        const resp = await fetch('/api/results');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        if (!Array.isArray(data)) {
+          resultsEl.textContent = 'Expected a list of results.';
+          return;
+        }
+
+        if (!data.length) {
+          resultsEl.textContent = 'No results yet.';
+          statusEl.textContent = '';
+          return;
+        }
+
+        const table = document.createElement('table');
+        const header = table.insertRow();
+        ['timestamp', 'from', 'message', 'parsed'].forEach(h => {
+          const th = document.createElement('th');
+          th.textContent = h;
+          header.appendChild(th);
+        });
+
+        for (const row of data) {
+          const tr = table.insertRow();
+          ['timestamp', 'from', 'message', 'parsed'].forEach(k => {
+            const td = tr.insertCell();
+            const value = row[k];
+            td.textContent = (k === 'parsed' && value && typeof value === 'object')
+              ? JSON.stringify(value)
+              : value;
+          });
+        }
+        resultsEl.appendChild(table);
+        statusEl.textContent = `Last updated ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+      }
+    }
+
+    refreshBtn.addEventListener('click', fetchResults);
+    fetchResults();
+  </script>
+</body>
+</html>
